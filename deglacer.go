@@ -56,6 +56,7 @@ var (
 	kibelaCli          *kibela.Kibela
 	slackCli           *slack.Client
 	kibelaTeam         string
+  kibelaToken        string
 	slackSigningSecret string
 )
 

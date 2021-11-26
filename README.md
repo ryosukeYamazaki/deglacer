@@ -79,6 +79,14 @@ Bot名は、左メニューのApp Homeから確認してください。
 
 これで準備完了です。
 
+#### AWS App Runner で動かす場合
+
+1. 事前に[docker imageを作成](## docker imageのbuild方法)します。
+2. buildしたイメージを[ECRにpush](## docker imageをcontainer registroyにpushする方法)します
+3. App Runner をコンテナイメージで作成します。
+4. 環境変数に設定項目を記載
+5. aws console から手動 deployします。
+
 ## See Also
 
 deglacerはotofune/slack-unfurl-kibelaのRuby実装を参考に移植しました。設定にあたっては、higebuさんのエントリが非常に参考になりました。
@@ -86,6 +94,24 @@ deglacerはotofune/slack-unfurl-kibelaのRuby実装を参考に移植しまし�
 - https://github.com/higebu/slack-app-unfurl-kibela
     - https://www.higebu.com/blog/2019/12/04/slack-app-unfurl-kibela/
 - https://github.com/otofune/slack-unfurl-kibela
+
+## docker imageのbuild方法
+
+```
+make docker.build
+```
+このコマンドではdocker imageをbuildして、 imageに `deglacer:latest` というタグをつけます。
+
+## docker imageをcontainer registroyにpushする方法
+
+### ECRへ
+
+ECRへのpushは以下のようになります。
+`account_id`, `region_name` は自分が使っているものに置き換えてください。
+
+```
+docker push account_id.dkr.ecr.region_name.amazonaws.com/deglacer:latest
+```
 
 ## Author
 
