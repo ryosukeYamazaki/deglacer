@@ -12,10 +12,10 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
-	"strconv"
 	"strings"
 	"syscall"
 
+	"github.com/Songmu/deglacer/attacher"
 	"github.com/Songmu/kibelasync/kibela"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -56,7 +56,7 @@ var (
 	kibelaCli          *kibela.Kibela
 	slackCli           *slack.Client
 	kibelaTeam         string
-  kibelaToken        string
+	kibelaToken        string
 	slackSigningSecret string
 )
 
@@ -158,53 +158,23 @@ func callback(ctx context.Context, ev *slackevents.LinkSharedEvent) error {
 	unfurls := make(map[string]slack.Attachment, len(ev.Links))
 
 	for _, link := range ev.Links {
-		if !strings.HasSuffix(link.Domain, ".kibe.la") {
-			continue
-		}
 		u, err := url.Parse(link.URL)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		m := noteReg.FindStringSubmatch(u.Path)
-		if len(m) < 2 {
-			continue
-		}
-		id, _ := strconv.Atoi(m[1])
-		note, err := kibelaCli.GetNote(ctx, id)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		var (
-			author      = note.Author
-			title       = note.Title
-			text        = note.Summary
-			publishedAt = note.PublishedAt
-		)
-		if m := fragmentReg.FindStringSubmatch(u.Fragment); len(m) > 1 {
-			id, _ := strconv.Atoi(m[1])
-			comment, err := kibelaCli.GetComment(ctx, id)
+		if strings.HasSuffix(link.Domain, attacher.DomainSuffix) {
+			kibelaAttacher, err := attacher.New(kibelaCli)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			author = comment.Author
-			title = fmt.Sprintf(`comment for "%s"`, title)
-			text = comment.Summary
-			publishedAt = comment.PublishedAt
-		}
-		unfurls[link.URL] = slack.Attachment{
-			// We can't use kibela's avatar URL for an icon, because it's not a public resource.
-			// AuthorIcon: author.AvatarImage.URL
-			AuthorLink: fmt.Sprintf("https://%s.kibe.la/@%s", kibelaTeam, author.Account),
-			AuthorName: author.Account,
-			Title:      title,
-			TitleLink:  link.URL,
-			Text:       spacesReg.ReplaceAllString(text, " "),
-			Footer:     "Kibela",
-			FooterIcon: "https://cdn.kibe.la/assets/shortcut_icon-99b5d6891a0a53624ab74ef26a28079e37c4f953af6ea62396f060d3916df061.png",
-			Ts:         json.Number(fmt.Sprintf("%d", publishedAt.Time.Unix())),
+			attachment, err := kibelaAttacher.SlackAttachment(ctx, u, kibelaTeam)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			unfurls[link.URL] = attachment
 		}
 	}
 
