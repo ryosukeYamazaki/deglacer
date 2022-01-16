@@ -17,6 +17,7 @@ import (
 
 	"github.com/Songmu/deglacer/attacher"
 	"github.com/Songmu/kibelasync/kibela"
+	fb "github.com/huandu/facebook/v2"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"golang.org/x/sync/errgroup"
@@ -58,6 +59,7 @@ var (
 	kibelaTeam         string
 	kibelaToken        string
 	slackSigningSecret string
+	workplaceSessoin   *fb.Session
 )
 
 func initialize() error {
@@ -77,6 +79,22 @@ func initialize() error {
 		return errors.New("env SLACK_TOKEN is empty")
 	}
 	slackCli = slack.New(slackToken)
+
+	wpAppId := os.Getenv("WORKPLACE_APP_ID")
+	if wpAppId == "" {
+		return errors.New("env WORKPLACE_APP_ID is empty")
+	}
+	wpAppSecrete := os.Getenv("WORKPLACE_APP_SECRET")
+	if wpAppSecrete == "" {
+		return errors.New("env WORKPLACE_APP_SECRET is empty")
+	}
+	wpAccessToken := os.Getenv("WORKPLACE_ACCESS_TOKEN")
+	if wpAccessToken == "" {
+		return errors.New("env WORKPLACE_ACCESS_TOKEN is empty")
+	}
+	globalApp := fb.New(wpAppId, wpAppSecrete)
+	globalApp.EnableAppsecretProof = true
+	workplaceSessoin = globalApp.Session(wpAccessToken)
 	return nil
 }
 
@@ -163,13 +181,27 @@ func callback(ctx context.Context, ev *slackevents.LinkSharedEvent) error {
 			log.Println(err)
 			continue
 		}
+		log.Printf("link.Domain: %s \n.", link.Domain)
 		if strings.HasSuffix(link.Domain, attacher.DomainSuffix) {
-			kibelaAttacher, err := attacher.New(kibelaCli)
+			kibelaAttacher, err := attacher.NewKibela(kibelaCli)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
 			attachment, err := kibelaAttacher.SlackAttachment(ctx, u, kibelaTeam)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			unfurls[link.URL] = attachment
+		}
+		if strings.HasSuffix(link.Domain, attacher.WorkplaceSuffix) {
+			workplaceAttacher, err := attacher.NewWorkplace(workplaceSessoin)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			attachment, err := workplaceAttacher.SlackAttachment(u)
 			if err != nil {
 				log.Println(err)
 				continue

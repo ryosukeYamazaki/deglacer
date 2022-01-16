@@ -27,7 +27,7 @@ type KibelaAttacher struct {
 	kibelaCli *kibela.Kibela
 }
 
-func New(kibelaCli *kibela.Kibela) (KibelaAttacher, error) {
+func NewKibela(kibelaCli *kibela.Kibela) (KibelaAttacher, error) {
 	attacher := KibelaAttacher{}
 	if kibelaCli == nil {
 		e := errors.New("kibelaCliがnilです。")
