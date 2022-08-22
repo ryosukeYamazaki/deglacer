@@ -2,7 +2,6 @@ package attacher
 
 import (
 	"errors"
-	"log"
 	"net/url"
 	"strings"
 
@@ -30,12 +29,12 @@ func NewWorkplace(wpSession *fb.Session) (WorkplaceAttacher, error) {
 
 func (a WorkplaceAttacher) SlackAttachment(url *url.URL) (slack.Attachment, error) {
 	attachment := slack.Attachment{}
-	permalink := "/groups/1779121192119476/permalink/3594996737198570/"
-	if url.Path != permalink {
-		e := errors.New("指定以外のURLです。")
-		log.Printf("url.Path: %s \n.", url.Path)
-		return attachment, e
-	}
+	// permalink := "/groups/358788527889437/permalink/1345306082571005/"
+	// if url.Path != permalink {
+	// 	e := errors.New("指定以外のURLです。")
+	// 	log.Printf("url.Path: %s \n.", url.Path)
+	// 	return attachment, e
+	// }
 	postId := postIDFromPath(url.Path)
 	res, _ := a.workplaceSession.Get(postId, fb.Params{"fields": "message"})
 	message := res["message"]
